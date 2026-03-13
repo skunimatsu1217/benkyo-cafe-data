@@ -85,11 +85,31 @@
             <h2>月別プラン変更件数推移</h2>
             <div class="chart-container"><canvas id="changeChart"></canvas></div>
         </div>
+
+        <div class="chart-section">
+            <h2>即日アップグレード履歴</h2>
+            <p style="font-size:0.85rem;color:#666;margin-bottom:0.5rem;">月途中でのプランアップグレード（差額課金）の記録</p>
+            <div class="stats-grid" id="upgradeStats"></div>
+            <div class="chart-container" style="margin-bottom:1rem;"><canvas id="upgradeChart"></canvas></div>
+            <div class="filter-bar">
+                <input type="text" id="upgrade-search" placeholder="会員番号・名前・プラン名で検索..." oninput="filterUpgrades()">
+                <select id="upgradeMonthSelect" onchange="filterUpgrades()">
+                    <option value="">全期間</option>
+                </select>
+            </div>
+            <div class="data-table-wrapper" style="max-height:500px;overflow-y:auto;">
+                <table class="data-table" id="upgrade-table">
+                    <thead><tr><th>決済日</th><th>会員番号</th><th>氏名</th><th>内容</th><th>金額</th><th>ステータス</th></tr></thead>
+                    <tbody id="upgrade-tbody"></tbody>
+                </table>
+            </div>
+        </div>
     </main>
     <footer><p>&copy; 勉強カフェ新宿エリア</p></footer>
 
     <script src="../data/payments.js"></script>
     <script src="../data/plan_detail.js"></script>
+    <script src="../data/upgrades.js"></script>
     <script>
     if (sessionStorage.getItem('bc_auth') !== 'ok') { window.location.href = '../index.html'; }
 
@@ -240,6 +260,76 @@
                 scales: { x: { ticks: { maxTicksLimit: 20 } }, y: { beginAtZero: true } }
             }
         });
+        // Upgrade section
+        renderUpgrades();
+    }
+
+    let upgradeChart2;
+    function renderUpgrades() {
+        const ud = upgradeData[currentStore];
+
+        document.getElementById('upgradeStats').innerHTML = `
+            <div class="stat-card warn">
+                <div class="stat-value">${ud.total}</div>
+                <div class="stat-label">即日アップグレード件数</div>
+            </div>
+        `;
+
+        // Upgrade monthly chart
+        upgradeChart2 = destroyChart(upgradeChart2);
+        if (ud.monthly.labels.length > 0) {
+            upgradeChart2 = new Chart(document.getElementById('upgradeChart'), {
+                type: 'bar',
+                data: {
+                    labels: ud.monthly.labels,
+                    datasets: [
+                        { label: '件数', data: ud.monthly.counts, backgroundColor: 'rgba(230,126,34,0.6)', yAxisID: 'y' },
+                        { label: '金額', data: ud.monthly.revenue, borderColor: '#e74c3c', backgroundColor: 'rgba(231,76,60,0.1)', type: 'line', fill: true, tension: 0.3, yAxisID: 'y1' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: { ticks: { maxTicksLimit: 20 } },
+                        y: { beginAtZero: true, position: 'left', title: { display: true, text: '件数' } },
+                        y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { callback: v => '¥' + (v/10000).toFixed(0) + '万' } }
+                    }
+                }
+            });
+        }
+
+        // Month selector for upgrades
+        const sel = document.getElementById('upgradeMonthSelect');
+        const months = [...new Set(ud.records.map(r => r.ym))].sort().reverse();
+        sel.innerHTML = '<option value="">全期間</option>' + months.map(m => `<option value="${m}">${m}</option>`).join('');
+
+        // Render table
+        renderUpgradeTable(ud.records);
+    }
+
+    function renderUpgradeTable(records) {
+        document.getElementById('upgrade-tbody').innerHTML = records.map(r =>
+            `<tr>
+                <td>${r.date}</td>
+                <td>${r.member}</td>
+                <td>${r.name}</td>
+                <td style="white-space:normal;max-width:300px;">${r.course}</td>
+                <td style="text-align:right;">¥${r.amount.toLocaleString()}</td>
+                <td>${r.status}</td>
+            </tr>`
+        ).join('');
+    }
+
+    function filterUpgrades() {
+        const query = document.getElementById('upgrade-search').value.toLowerCase();
+        const month = document.getElementById('upgradeMonthSelect').value;
+        const ud = upgradeData[currentStore];
+        const filtered = ud.records.filter(r => {
+            if (month && r.ym !== month) return false;
+            if (query && !(r.member + r.name + r.course).toLowerCase().includes(query)) return false;
+            return true;
+        });
+        renderUpgradeTable(filtered);
     }
 
     renderAll();

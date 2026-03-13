@@ -48,8 +48,13 @@
         </div>
 
         <div class="chart-section">
-            <h2>直近30日間 日別 x 時間帯 在館人数</h2>
-            <div style="overflow-x:auto;" id="heatmap-recent"></div>
+            <h2>直近30日間 日別 x 時間帯 在館人数（BCS 新宿スタジオ）</h2>
+            <div style="overflow-x:auto;" id="heatmap-recent-bcs"></div>
+        </div>
+
+        <div class="chart-section">
+            <h2>直近30日間 日別 x 時間帯 在館人数（BCBP BPスタジオ）</h2>
+            <div style="overflow-x:auto;" id="heatmap-recent-bp"></div>
         </div>
 
         <div class="chart-section">
@@ -143,23 +148,25 @@
         }
         document.getElementById('heatmap-dow').innerHTML = buildHeatmapTable(dowLabels, dowRows, dowMax);
 
-        // Recent daily heatmap
+        // Recent daily heatmaps (BCS and BCBP separately)
         const dates = Object.keys(hd.recent_daily).sort().reverse();
-        const recentRows = [];
-        const recentLabels = [];
-        let recentMax = 0;
-        dates.forEach(d => {
-            const entry = hd.recent_daily[d];
-            const bcsArr = entry.bcs;
-            const bpArr = entry.bp;
-            const vals = getHourlyValues(currentStore, bcsArr, bpArr);
-            recentRows.push(vals);
-            const dt = new Date(d.replace(/\//g, '-'));
-            const dow = DOW_NAMES[dt.getDay() === 0 ? 6 : dt.getDay() - 1];
-            recentLabels.push(`${d} (${dow})`);
-            vals.forEach(v => { if (v > recentMax) recentMax = v; });
-        });
-        document.getElementById('heatmap-recent').innerHTML = buildHeatmapTable(recentLabels, recentRows, recentMax);
+        function buildRecentHeatmap(store) {
+            const rows = [];
+            const labels = [];
+            let max = 0;
+            dates.forEach(d => {
+                const entry = hd.recent_daily[d];
+                const vals = store === 'bcs' ? entry.bcs : entry.bp;
+                rows.push(vals);
+                const dt = new Date(d.replace(/\//g, '-'));
+                const dow = DOW_NAMES[dt.getDay() === 0 ? 6 : dt.getDay() - 1];
+                labels.push(`${d} (${dow})`);
+                vals.forEach(v => { if (v > max) max = v; });
+            });
+            return buildHeatmapTable(labels, rows, max);
+        }
+        document.getElementById('heatmap-recent-bcs').innerHTML = buildRecentHeatmap('bcs');
+        document.getElementById('heatmap-recent-bp').innerHTML = buildRecentHeatmap('bp');
     }
 
     function setStore(store) {
