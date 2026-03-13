@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>即日アップグレード提案書 - 勉強カフェ新宿</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <style>
+        .proposal-header {
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            color: #fff;
+            padding: 2.5rem 2rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        .proposal-header h2 { font-size: 1.8rem; margin-bottom: 0.5rem; border: none; padding: 0; color: #fff; }
+        .proposal-header .subtitle { opacity: 0.8; font-size: 0.95rem; }
+        .proposal-header .badge { display: inline-block; background: #e74c3c; padding: 0.2rem 1rem; border-radius: 20px; font-size: 0.8rem; margin-bottom: 0.8rem; }
+        .proposal-header .meta { font-size: 0.8rem; opacity: 0.5; margin-top: 1rem; }
+
+        .highlight-box { border-left: 4px solid #0f3460; padding: 1rem 1.2rem; margin: 1rem 0; border-radius: 0 6px 6px 0; background: #f0f4ff; font-size: 0.9rem; line-height: 1.7; }
+        .highlight-box.green { background: #f0fff4; border-left-color: #27ae60; }
+        .highlight-box.orange { background: #fff8f0; border-left-color: #e67e22; }
+
+        .kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1rem 0; }
+        .kpi { background: #f8f9fa; border-radius: 8px; padding: 1rem; text-align: center; }
+        .kpi .value { font-size: 1.5rem; font-weight: bold; color: #0f3460; }
+        .kpi .label { font-size: 0.75rem; color: #666; margin-top: 0.2rem; }
+        .kpi.accent { background: #0f3460; }
+        .kpi.accent .value { color: #fff; }
+        .kpi.accent .label { color: rgba(255,255,255,0.7); }
+
+        .merit-list { list-style: none; margin: 0.5rem 0; padding: 0; }
+        .merit-list li { padding: 0.7rem 0; border-bottom: 1px solid #eee; display: flex; align-items: flex-start; gap: 0.7rem; font-size: 0.9rem; }
+        .merit-list .icon { flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; background: #27ae60; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: bold; }
+        .merit-list .icon.blue { background: #0f3460; }
+
+        .flow-diagram { display: flex; align-items: center; justify-content: center; gap: 0.4rem; margin: 1.2rem 0; flex-wrap: wrap; }
+        .flow-step { background: #f0f4ff; border: 2px solid #0f3460; border-radius: 8px; padding: 0.5rem 1rem; font-size: 0.8rem; text-align: center; }
+        .flow-arrow { font-size: 1.3rem; color: #0f3460; }
+
+        .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+        .comparison > div { padding: 1rem; border-radius: 8px; font-size: 0.9rem; }
+        .comparison .before { background: #f8f9fa; border: 2px solid #ddd; }
+        .comparison .after { background: #f0fff4; border: 2px solid #27ae60; }
+        .comparison h4 { margin-bottom: 0.5rem; font-size: 0.95rem; }
+
+        .proposal-table { width: 100%; border-collapse: collapse; margin: 0.8rem 0; font-size: 0.85rem; }
+        .proposal-table th, .proposal-table td { padding: 0.5rem 0.7rem; text-align: left; border-bottom: 1px solid #e0e0e0; }
+        .proposal-table th { background: #16213e; color: #fff; font-weight: 500; }
+        .proposal-table tr:nth-child(even) { background: #f8f9fa; }
+        .proposal-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+        .proposal-table .total-row { background: #0f3460 !important; color: #fff; font-weight: bold; }
+        .proposal-table .total-row td { color: #fff; }
+
+        .section-label { font-size: 0.85rem; color: #0f3460; font-weight: bold; margin: 1.2rem 0 0.5rem; padding-left: 0.5rem; border-left: 3px solid #0f3460; }
+
+        @media (max-width: 768px) {
+            .kpi-grid { grid-template-columns: 1fr; }
+            .comparison { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>勉強カフェ新宿エリア データダッシュボード</h1>
+    </header>
+    <main>
+        <a href="../dashboard.html" class="back-link">&larr; トップに戻る</a>
+        <h1 class="page-title">即日アップグレード機能 提案書</h1>
+
+        <!-- ヘッダー -->
+        <div class="proposal-header">
+            <div class="badge">CONFIDENTIAL</div>
+            <h2>即日アップグレード機能<br>スタディGO導入提案書</h2>
+            <p class="subtitle">勉強カフェ新宿エリア2店舗の実績データに基づく<br>機能開発・オプション販売のご提案</p>
+            <p class="meta">2026年3月 / 勉強カフェ新宿エリア</p>
+        </div>
+
+        <!-- 1. エグゼクティブサマリー -->
+        <div class="chart-section">
+            <h2>1. エグゼクティブサマリー</h2>
+            <div class="highlight-box">
+                <strong>提案概要：</strong>勉強カフェ新宿エリア2店舗で運用中の「即日アップグレード」機能を、スタディGOの追加オプション機能として開発・販売することを提案します。
+            </div>
+
+            <div class="section-label">新宿2店舗の実績（2021年〜2026年2月）</div>
+            <div class="kpi-grid">
+                <div class="kpi accent"><div class="value" id="kpi-total">-</div><div class="label">累計利用件数</div></div>
+                <div class="kpi accent"><div class="value" id="kpi-revenue">-</div><div class="label">累計追加売上</div></div>
+                <div class="kpi accent"><div class="value" id="kpi-members">-</div><div class="label">利用ユニーク会員数</div></div>
+            </div>
+            <div class="kpi-grid">
+                <div class="kpi"><div class="value" id="kpi-avg-count">-</div><div class="label">直近6ヶ月 月平均利用</div></div>
+                <div class="kpi"><div class="value" id="kpi-avg-revenue">-</div><div class="label">直近6ヶ月 月平均売上</div></div>
+                <div class="kpi"><div class="value" id="kpi-repeat">-</div><div class="label">リピート率（2回以上利用）</div></div>
+            </div>
+
+            <div class="highlight-box green">
+                <strong>ポイント：</strong>2店舗だけで年間約56万円の追加売上。全国展開すれば、導入店舗数に比例したスケーラブルな収益が見込めます。さらにスタディGOのオプション機能として他店舗に販売することで、SaaS収益の拡大が可能です。
+            </div>
+        </div>
+
+        <!-- 2. 即日アップグレードとは -->
+        <div class="chart-section">
+            <h2>2. 即日アップグレードとは</h2>
+            <p style="font-size:0.9rem;margin-bottom:0.5rem;">月の途中で現在のプランを上位プランに変更し、差額分を日割り課金する仕組みです。</p>
+
+            <div class="flow-diagram">
+                <div class="flow-step">会員が<br>上位プラン希望</div>
+                <div class="flow-arrow">&rarr;</div>
+                <div class="flow-step">スタッフが<br>プラン変更処理</div>
+                <div class="flow-arrow">&rarr;</div>
+                <div class="flow-step">差額を<br>日割り自動計算</div>
+                <div class="flow-arrow">&rarr;</div>
+                <div class="flow-step">即日から<br>新プラン適用</div>
+            </div>
+
+            <div class="section-label">典型的な利用パターン</div>
+            <table class="proposal-table">
+                <thead><tr><th>変更前</th><th>変更後</th><th class="num">平均差額</th><th>きっかけ</th></tr></thead>
+                <tbody>
+                    <tr><td>レギュラー</td><td>レギュラープラス</td><td class="num">&yen;5,000〜9,000</td><td>利用時間を増やしたい</td></tr>
+                    <tr><td>ウィークデイ</td><td>プレミアム</td><td class="num">&yen;8,000〜12,000</td><td>土日も利用したい</td></tr>
+                    <tr><td>モーニング系</td><td>レギュラー以上</td><td class="num">&yen;3,000〜8,000</td><td>夜も勉強したい</td></tr>
+                    <tr><td>時間制(20H/40H)</td><td>定額制</td><td class="num">&yen;5,000〜15,000</td><td>利用頻度が増えた</td></tr>
+                </tbody>
+            </table>
+
+            <div class="highlight-box">
+                <strong>1件あたりの単価：</strong>平均 <span id="avg-price">-</span> / 中央値 <span id="median-price">-</span>
+            </div>
+        </div>
+
+        <!-- 3. 実績データ -->
+        <div class="chart-section">
+            <h2>3. 実績データ（新宿2店舗）</h2>
+
+            <div class="section-label">月別推移チャート</div>
+            <div class="chart-container"><canvas id="proposalChart"></canvas></div>
+
+            <div class="section-label">年別推移</div>
+            <table class="proposal-table" id="yearlyTable">
+                <thead><tr><th>年</th><th class="num">件数</th><th class="num">売上</th><th class="num">利用者数</th><th class="num">前年比（件数）</th></tr></thead>
+                <tbody id="yearlyTbody"></tbody>
+            </table>
+
+            <div class="highlight-box green" id="yearlyHighlight"></div>
+
+            <div class="section-label">月間売上に対するインパクト</div>
+            <table class="proposal-table" id="impactTable">
+                <thead><tr><th>指標</th><th class="num">金額</th></tr></thead>
+                <tbody id="impactTbody"></tbody>
+            </table>
+            <p style="font-size:0.8rem;color:#666;margin-top:0.3rem;">※2店舗・約200名規模での数値。店舗規模・会員数に比例してスケールする収益構造</p>
+        </div>
+
+        <!-- 4. メリット -->
+        <div class="chart-section">
+            <h2>4. スタディGOへの導入メリット</h2>
+
+            <div class="section-label">A. 導入店舗側のメリット</div>
+            <ul class="merit-list">
+                <li><div class="icon">1</div><div><strong>追加売上の創出</strong><br>通常の月額課金では得られない、月途中の差額売上が発生。新宿2店舗の実績では会員200名規模で月約&yen;46,000。会員数に比例してスケールする。</div></li>
+                <li><div class="icon">2</div><div><strong>会員満足度の向上</strong><br>「今月だけ多く使いたい」「試験前で追い込みたい」というニーズに即座に対応。待たずにその日からプランアップできるため、会員体験が向上。</div></li>
+                <li><div class="icon">3</div><div><strong>自然なアップセル導線</strong><br>上位プランを「お試し」できる仕組みとして機能。リピート率28.3%が示す通り、一度上位プランを体験すると継続的にアップグレードする傾向がある。最終的な恒久プラン変更にもつながる。</div></li>
+                <li><div class="icon">4</div><div><strong>退会防止・休会復帰の促進</strong><br>「プランが合わない」という理由での退会を防止。柔軟にプランを調整できることで、退会ではなくプラン変更という選択肢を提供できる。</div></li>
+                <li><div class="icon">5</div><div><strong>スタッフの業務効率化</strong><br>日割り計算を自動化することで、手計算や請求ミスを防止。プラン変更対応のオペレーション負荷を軽減。</div></li>
+            </ul>
+
+            <div class="section-label">B. スタディGO事業としてのメリット</div>
+            <ul class="merit-list">
+                <li><div class="icon blue">A</div><div><strong>オプション販売による新規収益</strong><br>即日アップグレード機能をスタディGOのオプション機能として他店舗に販売。月額課金 or 従量課金でSaaS収益を拡大できる。</div></li>
+                <li><div class="icon blue">B</div><div><strong>競合との差別化</strong><br>コワーキング・自習室向けシステムで即日アップグレード（日割り差額自動計算）を標準搭載しているサービスは少ない。導入店舗の獲得・リテンションの武器になる。</div></li>
+                <li><div class="icon blue">C</div><div><strong>既存導入店舗のARPU向上</strong><br>オプション追加により、1店舗あたりの月額単価（ARPU）が向上。解約率の低下にもつながる。</div></li>
+            </ul>
+        </div>
+
+        <!-- 5. 収益シミュレーション -->
+        <div class="chart-section">
+            <h2>5. 収益シミュレーション</h2>
+
+            <div class="section-label">導入店舗側の追加売上（会員数別）</div>
+            <table class="proposal-table">
+                <thead><tr><th>会員規模</th><th class="num">月間推定件数</th><th class="num">月間追加売上</th><th class="num">年間追加売上</th></tr></thead>
+                <tbody>
+                    <tr><td>100名規模</td><td class="num">3件</td><td class="num">&yen;17,400</td><td class="num">&yen;208,800</td></tr>
+                    <tr><td>200名規模（新宿実績ベース）</td><td class="num">6件</td><td class="num">&yen;46,500</td><td class="num">&yen;558,000</td></tr>
+                    <tr><td>300名規模</td><td class="num">9件</td><td class="num">&yen;52,200</td><td class="num">&yen;626,400</td></tr>
+                    <tr><td>500名規模</td><td class="num">16件</td><td class="num">&yen;92,800</td><td class="num">&yen;1,113,600</td></tr>
+                </tbody>
+            </table>
+            <p style="font-size:0.8rem;color:#666;">※新宿実績（会員200名あたり月6.3件・&yen;46,476）を基準に線形推計。1件あたり平均&yen;5,800で計算</p>
+
+            <div class="section-label">スタディGO オプション販売の収益モデル（例）</div>
+            <table class="proposal-table">
+                <thead><tr><th>シナリオ</th><th class="num">導入店舗数</th><th class="num">オプション月額</th><th class="num">月間SaaS収益</th><th class="num">年間SaaS収益</th></tr></thead>
+                <tbody>
+                    <tr><td>初年度</td><td class="num">10店舗</td><td class="num">&yen;5,000/店</td><td class="num">&yen;50,000</td><td class="num">&yen;600,000</td></tr>
+                    <tr><td>2年目</td><td class="num">30店舗</td><td class="num">&yen;5,000/店</td><td class="num">&yen;150,000</td><td class="num">&yen;1,800,000</td></tr>
+                    <tr><td>3年目</td><td class="num">60店舗</td><td class="num">&yen;5,000/店</td><td class="num">&yen;300,000</td><td class="num">&yen;3,600,000</td></tr>
+                </tbody>
+            </table>
+
+            <div class="highlight-box green">
+                <strong>導入店舗にとってのROI：</strong><br>
+                オプション月額&yen;5,000に対し、200名規模の店舗で月&yen;46,500の追加売上 &rarr; <strong>投資対効果 約9.3倍</strong>。店舗側にとって導入しない理由がない価格設定が可能。
+            </div>
+
+            <div class="section-label">従量課金モデル（代替案）</div>
+            <div class="highlight-box">
+                アップグレード差額の5〜10%をシステム利用料として徴収するモデルも検討可能。<br>
+                新宿2店舗の場合：月&yen;46,500 &times; 10% = <strong>月&yen;4,650/2店舗</strong>（店舗の負担感が少ない）
+            </div>
+        </div>
+
+        <!-- 6. 機能要件 -->
+        <div class="chart-section">
+            <h2>6. 必要な機能要件</h2>
+            <table class="proposal-table">
+                <thead><tr><th>機能</th><th>概要</th><th>優先度</th></tr></thead>
+                <tbody>
+                    <tr><td>日割り差額自動計算</td><td>変更日〜月末までの差額を自動計算</td><td><strong style="color:#e74c3c;">必須</strong></td></tr>
+                    <tr><td>プラン即時切替</td><td>管理画面からワンクリックでプラン変更</td><td><strong style="color:#e74c3c;">必須</strong></td></tr>
+                    <tr><td>差額決済</td><td>登録済みカードで差額を即時 or 翌月合算決済</td><td><strong style="color:#e74c3c;">必須</strong></td></tr>
+                    <tr><td>変更履歴管理</td><td>誰が・いつ・何から何に変更したかのログ</td><td><strong style="color:#e74c3c;">必須</strong></td></tr>
+                    <tr><td>翌月プラン自動反映</td><td>翌月から新プランの月額に自動切替</td><td><strong style="color:#e74c3c;">必須</strong></td></tr>
+                    <tr><td>会員側申請機能</td><td>会員アプリからアップグレード申請</td><td style="color:#e67e22;">あると良い</td></tr>
+                    <tr><td>ダウングレード対応</td><td>上位&rarr;下位への変更と返金計算</td><td style="color:#999;">将来検討</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 7. まとめ -->
+        <div class="chart-section">
+            <h2>7. まとめ</h2>
+
+            <div class="comparison">
+                <div class="before">
+                    <h4>現状（機能なしの場合）</h4>
+                    <ul style="padding-left:1.2rem;font-size:0.85rem;line-height:1.8;">
+                        <li>プラン変更は翌月からのみ</li>
+                        <li>「今すぐ変えたい」ニーズに対応不可</li>
+                        <li>差額売上の機会損失</li>
+                        <li>プランが合わず退会のリスク</li>
+                    </ul>
+                </div>
+                <div class="after">
+                    <h4>導入後</h4>
+                    <ul style="padding-left:1.2rem;font-size:0.85rem;line-height:1.8;">
+                        <li>即日プラン変更が可能に</li>
+                        <li>会員満足度・柔軟性の向上</li>
+                        <li>月&yen;46,500（200名規模）の追加売上</li>
+                        <li>アップセル・退会防止に貢献</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="highlight-box green">
+                <strong>結論：</strong><br>
+                即日アップグレード機能は、<strong>新宿2店舗で4年間の運用実績</strong>があり、年々利用が拡大しています。
+                スタディGOのオプション機能として開発・販売することで：
+                <ul style="margin-top:0.5rem;padding-left:1.2rem;line-height:1.8;">
+                    <li><strong>導入店舗</strong>：追加売上の創出 + 会員満足度向上 + 退会防止</li>
+                    <li><strong>スタディGO</strong>：オプション販売収益 + 競合差別化 + ARPU向上</li>
+                </ul>
+                双方にとってメリットのある機能です。
+            </div>
+
+            <div style="margin-top:1.5rem;padding:1rem;background:#f8f9fa;border-radius:8px;text-align:center;">
+                <p style="font-size:0.8rem;color:#666;">本提案書のデータは、勉強カフェ新宿スタジオ(BCS)・BPスタジオ(BCBP)の<br>2021年3月〜2026年2月の実績データに基づいています。</p>
+            </div>
+        </div>
+    </main>
+    <footer><p>&copy; 勉強カフェ新宿エリア</p></footer>
+
+    <script src="../data/upgrades.js"></script>
+    <script src="../data/payments.js"></script>
+    <script>
+    if (sessionStorage.getItem('bc_auth') !== 'ok') { window.location.href = '../index.html'; }
+
+    function init() {
+        const bcs = upgradeData.bcs;
+        const bcbp = upgradeData.bcbp;
+        const allRecords = [...bcs.records, ...bcbp.records];
+        const totalCount = bcs.total + bcbp.total;
+        const totalRevenue = allRecords.reduce((s, r) => s + r.amount, 0);
+
+        // Unique members
+        const uniqueMembers = new Set(allRecords.map(r => r.member));
+        const uniqueCount = uniqueMembers.size;
+
+        // Repeat rate
+        const memberCounts = {};
+        allRecords.forEach(r => { memberCounts[r.member] = (memberCounts[r.member] || 0) + 1; });
+        const repeatMembers = Object.values(memberCounts).filter(c => c >= 2).length;
+        const repeatRate = ((repeatMembers / uniqueCount) * 100).toFixed(1);
+
+        // Last 6 months stats
+        const allMonthlyLabels = [...new Set([...bcs.monthly.labels, ...bcbp.monthly.labels])].sort();
+        const last6 = allMonthlyLabels.slice(-6);
+        let last6Count = 0, last6Revenue = 0;
+        last6.forEach(ym => {
+            const bi = bcs.monthly.labels.indexOf(ym);
+            const bpi = bcbp.monthly.labels.indexOf(ym);
+            if (bi >= 0) { last6Count += bcs.monthly.counts[bi]; last6Revenue += bcs.monthly.revenue[bi]; }
+            if (bpi >= 0) { last6Count += bcbp.monthly.counts[bpi]; last6Revenue += bcbp.monthly.revenue[bpi]; }
+        });
+
+        // KPIs
+        document.getElementById('kpi-total').textContent = totalCount + '件';
+        document.getElementById('kpi-revenue').textContent = '\u00a5' + totalRevenue.toLocaleString();
+        document.getElementById('kpi-members').textContent = uniqueCount + '名';
+        document.getElementById('kpi-avg-count').textContent = (last6Count / 6).toFixed(1) + '件/月';
+        document.getElementById('kpi-avg-revenue').textContent = '\u00a5' + Math.round(last6Revenue / 6).toLocaleString() + '/月';
+        document.getElementById('kpi-repeat').textContent = repeatRate + '%';
+
+        // Average / median price
+        const amounts = allRecords.map(r => r.amount).sort((a, b) => a - b);
+        const avg = Math.round(amounts.reduce((s, v) => s + v, 0) / amounts.length);
+        const median = amounts.length % 2 === 0
+            ? Math.round((amounts[amounts.length/2 - 1] + amounts[amounts.length/2]) / 2)
+            : amounts[Math.floor(amounts.length/2)];
+        document.getElementById('avg-price').textContent = '\u00a5' + avg.toLocaleString();
+        document.getElementById('median-price').textContent = '\u00a5' + median.toLocaleString();
+
+        // Yearly table
+        const yearData = {};
+        allRecords.forEach(r => {
+            const y = r.date.split('/')[0];
+            if (!yearData[y]) yearData[y] = { count: 0, revenue: 0, members: new Set() };
+            yearData[y].count++;
+            yearData[y].revenue += r.amount;
+            yearData[y].members.add(r.member);
+        });
+        const years = Object.keys(yearData).sort();
+        let prevCount = null;
+        document.getElementById('yearlyTbody').innerHTML = years.map(y => {
+            const d = yearData[y];
+            const yoyStr = prevCount !== null ? ((d.count - prevCount) >= 0 ? '+' : '') + Math.round(((d.count - prevCount) / prevCount) * 100) + '%' : '-';
+            prevCount = d.count;
+            return `<tr><td>${y}年</td><td class="num">${d.count}件</td><td class="num">\u00a5${d.revenue.toLocaleString()}</td><td class="num">${d.members.size}名</td><td class="num">${yoyStr}</td></tr>`;
+        }).join('');
+
+        // Yearly highlights
+        const lastFullYear = years.filter(y => parseInt(y) < 2026).pop();
+        const firstYear = years[0];
+        document.getElementById('yearlyHighlight').innerHTML = `
+            <strong>注目ポイント：</strong>
+            <ul style="margin-top:0.3rem;padding-left:1.2rem;line-height:1.8;">
+                <li>${firstYear}→${lastFullYear}年で件数は<strong>約${(yearData[lastFullYear].count / yearData[firstYear].count).toFixed(1)}倍</strong>、売上は<strong>約${(yearData[lastFullYear].revenue / yearData[firstYear].revenue).toFixed(1)}倍</strong>に成長</li>
+                <li>リピート率${repeatRate}%（${uniqueCount}名中${repeatMembers}名が2回以上利用）&rarr; <strong>一度使うと繰り返す傾向</strong></li>
+            </ul>`;
+
+        // Impact table
+        const bcsRevLabels = paymentsData.bcs.monthly_revenue.labels;
+        const bcbpRevLabels = paymentsData.bcbp.monthly_revenue.labels;
+        const bcsRevValues = paymentsData.bcs.monthly_revenue.values;
+        const bcbpRevValues = paymentsData.bcbp.monthly_revenue.values;
+        const last6TotalRev = last6.reduce((s, ym) => {
+            const bi = bcsRevLabels.indexOf(ym);
+            const bpi = bcbpRevLabels.indexOf(ym);
+            return s + (bi >= 0 ? bcsRevValues[bi] : 0) + (bpi >= 0 ? bcbpRevValues[bpi] : 0);
+        }, 0);
+        const avgMonthlyRev = Math.round(last6TotalRev / 6);
+        const avgMonthlyUpgrade = Math.round(last6Revenue / 6);
+        const pct = ((avgMonthlyUpgrade / avgMonthlyRev) * 100).toFixed(2);
+        document.getElementById('impactTbody').innerHTML = `
+            <tr><td>2店舗 月間売上平均（直近6ヶ月）</td><td class="num">\u00a5${avgMonthlyRev.toLocaleString()}</td></tr>
+            <tr><td>うち即日アップグレード</td><td class="num">\u00a5${avgMonthlyUpgrade.toLocaleString()}</td></tr>
+            <tr><td>売上構成比</td><td class="num">${pct}%</td></tr>`;
+
+        // Monthly chart (combined BCS + BCBP)
+        const monthlyMap = {};
+        allMonthlyLabels.forEach(ym => {
+            const bi = bcs.monthly.labels.indexOf(ym);
+            const bpi = bcbp.monthly.labels.indexOf(ym);
+            monthlyMap[ym] = {
+                count: (bi >= 0 ? bcs.monthly.counts[bi] : 0) + (bpi >= 0 ? bcbp.monthly.counts[bpi] : 0),
+                revenue: (bi >= 0 ? bcs.monthly.revenue[bi] : 0) + (bpi >= 0 ? bcbp.monthly.revenue[bpi] : 0)
+            };
+        });
+        const chartLabels = allMonthlyLabels;
+        const chartCounts = chartLabels.map(ym => monthlyMap[ym].count);
+        const chartRevenue = chartLabels.map(ym => monthlyMap[ym].revenue);
+
+        new Chart(document.getElementById('proposalChart'), {
+            type: 'bar',
+            data: {
+                labels: chartLabels,
+                datasets: [
+                    { label: '件数', data: chartCounts, backgroundColor: 'rgba(15,52,96,0.6)', yAxisID: 'y' },
+                    { label: '売上', data: chartRevenue, borderColor: '#e74c3c', backgroundColor: 'rgba(231,76,60,0.1)', type: 'line', fill: true, tension: 0.3, yAxisID: 'y1' }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'top' } },
+                scales: {
+                    x: { ticks: { maxTicksLimit: 20 } },
+                    y: { beginAtZero: true, position: 'left', title: { display: true, text: '件数' } },
+                    y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { callback: v => '\u00a5' + (v/10000).toFixed(0) + '万' } }
+                }
+            }
+        });
+    }
+    init();
+    </script>
+</body>
+</html>
