@@ -13,10 +13,6 @@
     </header>
     <main>
         <div class="stats-grid" id="overview-stats">
-            <div class="stat-card total">
-                <div class="stat-value" id="total-usage">-</div>
-                <div class="stat-label">総利用回数</div>
-            </div>
             <div class="stat-card bcs">
                 <div class="stat-value" id="active-bcs">-</div>
                 <div class="stat-label">BCS アクティブ会員</div>
@@ -25,11 +21,10 @@
                 <div class="stat-value" id="active-bp">-</div>
                 <div class="stat-label">BCBP アクティブ会員</div>
             </div>
-            <div class="stat-card total">
-                <div class="stat-value" id="total-revenue">-</div>
-                <div class="stat-label">累計売上</div>
-            </div>
         </div>
+
+        <h2 style="font-size:1.1rem;color:#2c3e50;margin-bottom:0.8rem;">直近3ヶ月 売上</h2>
+        <div id="revenue-3m"></div>
 
         <nav class="data-links">
             <a href="pages/usage.html" class="card">
@@ -61,12 +56,37 @@
     if (sessionStorage.getItem('bc_auth') !== 'ok') {
         window.location.href = 'index.html';
     }
-    document.getElementById('total-usage').textContent =
-        (usageData.summary.total_bcs + usageData.summary.total_bp).toLocaleString();
     document.getElementById('active-bcs').textContent = membersData.bcs.total_truly_active;
     document.getElementById('active-bp').textContent = membersData.bcbp.total_truly_active;
-    const totalRev = paymentsData.bcs.total_revenue + paymentsData.bcbp.total_revenue;
-    document.getElementById('total-revenue').textContent = '¥' + totalRev.toLocaleString();
+
+    // 直近3ヶ月売上を横並び表示
+    const bcsLabels = paymentsData.bcs.monthly_revenue.labels;
+    const bcsValues = paymentsData.bcs.monthly_revenue.values;
+    const bcbpLabels = paymentsData.bcbp.monthly_revenue.labels;
+    const bcbpValues = paymentsData.bcbp.monthly_revenue.values;
+    const last3 = bcsLabels.slice(-3);
+
+    let html = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.5rem;">';
+    last3.forEach((month, i) => {
+        const bcsIdx = bcsLabels.indexOf(month);
+        const bcbpIdx = bcbpLabels.indexOf(month);
+        const bcsRev = bcsIdx >= 0 ? bcsValues[bcsIdx] : 0;
+        const bcbpRev = bcbpIdx >= 0 ? bcbpValues[bcbpIdx] : 0;
+        html += `
+        <div style="background:#fff;border-radius:8px;padding:1rem;box-shadow:0 1px 3px rgba(0,0,0,0.08);text-align:center;">
+            <div style="font-weight:bold;color:#2c3e50;margin-bottom:0.5rem;">${month}</div>
+            <div style="border-top:3px solid #3498db;padding-top:0.5rem;margin-bottom:0.5rem;">
+                <div style="font-size:0.75rem;color:#666;">BCS</div>
+                <div style="font-size:1.2rem;font-weight:bold;color:#2c3e50;">¥${bcsRev.toLocaleString()}</div>
+            </div>
+            <div style="border-top:3px solid #e74c3c;padding-top:0.5rem;">
+                <div style="font-size:0.75rem;color:#666;">BCBP</div>
+                <div style="font-size:1.2rem;font-weight:bold;color:#2c3e50;">¥${bcbpRev.toLocaleString()}</div>
+            </div>
+        </div>`;
+    });
+    html += '</div>';
+    document.getElementById('revenue-3m').innerHTML = html;
     </script>
 </body>
 </html>
