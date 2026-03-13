@@ -5,6 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>勉強カフェ新宿 データ管理</title>
     <link rel="stylesheet" href="css/style.css">
+    <style>
+        .month-col { background:#fff; border-radius:8px; padding:1rem; box-shadow:0 1px 3px rgba(0,0,0,0.08); text-align:center; }
+        .month-col .month-label { font-weight:bold; color:#2c3e50; margin-bottom:0.5rem; font-size:1rem; }
+        .store-row { padding-top:0.5rem; margin-bottom:0.3rem; }
+        .store-row.bcs-row { border-top:3px solid #3498db; }
+        .store-row.bp-row { border-top:3px solid #e74c3c; }
+        .store-name { font-size:0.75rem; color:#666; }
+        .main-value { font-size:1.2rem; font-weight:bold; color:#2c3e50; }
+        .compare { font-size:0.7rem; margin-top:2px; }
+        .compare .up { color:#e74c3c; }
+        .compare .down { color:#3498db; }
+        .compare .flat { color:#999; }
+        .grid-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; margin-bottom:1.5rem; }
+        .section-title { font-size:1.1rem; color:#2c3e50; margin-bottom:0.8rem; font-weight:bold; }
+    </style>
 </head>
 <body>
     <header>
@@ -12,19 +27,11 @@
         <p class="subtitle">新宿スタジオ (BCS) ・ BPスタジオ (BCBP) 2店舗のデータ分析</p>
     </header>
     <main>
-        <div class="stats-grid" id="overview-stats">
-            <div class="stat-card bcs">
-                <div class="stat-value" id="active-bcs">-</div>
-                <div class="stat-label">BCS アクティブ会員</div>
-            </div>
-            <div class="stat-card bp">
-                <div class="stat-value" id="active-bp">-</div>
-                <div class="stat-label">BCBP アクティブ会員</div>
-            </div>
-        </div>
+        <h2 class="section-title">直近3ヶ月 アクティブ会員数</h2>
+        <div class="grid-3" id="members-3m"></div>
 
-        <h2 style="font-size:1.1rem;color:#2c3e50;margin-bottom:0.8rem;">直近3ヶ月 売上</h2>
-        <div id="revenue-3m"></div>
+        <h2 class="section-title">直近3ヶ月 売上</h2>
+        <div class="grid-3" id="revenue-3m"></div>
 
         <nav class="data-links">
             <a href="pages/usage.html" class="card">
@@ -48,45 +55,84 @@
     <footer>
         <p>&copy; 勉強カフェ新宿エリア</p>
     </footer>
-    <script src="data/usage.js"></script>
-    <script src="data/members.js"></script>
     <script src="data/payments.js"></script>
+    <script src="data/dashboard_extra.js"></script>
     <script>
-    // Auth check
     if (sessionStorage.getItem('bc_auth') !== 'ok') {
         window.location.href = 'index.html';
     }
-    document.getElementById('active-bcs').textContent = membersData.bcs.total_truly_active;
-    document.getElementById('active-bp').textContent = membersData.bcbp.total_truly_active;
 
-    // 直近3ヶ月売上を横並び表示
-    const bcsLabels = paymentsData.bcs.monthly_revenue.labels;
-    const bcsValues = paymentsData.bcs.monthly_revenue.values;
-    const bcbpLabels = paymentsData.bcbp.monthly_revenue.labels;
-    const bcbpValues = paymentsData.bcbp.monthly_revenue.values;
-    const last3 = bcsLabels.slice(-3);
+    function getVal(labels, values, ym) {
+        const idx = labels.indexOf(ym);
+        return idx >= 0 ? values[idx] : null;
+    }
 
-    let html = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.5rem;">';
-    last3.forEach((month, i) => {
-        const bcsIdx = bcsLabels.indexOf(month);
-        const bcbpIdx = bcbpLabels.indexOf(month);
-        const bcsRev = bcsIdx >= 0 ? bcsValues[bcsIdx] : 0;
-        const bcbpRev = bcbpIdx >= 0 ? bcbpValues[bcbpIdx] : 0;
-        html += `
-        <div style="background:#fff;border-radius:8px;padding:1rem;box-shadow:0 1px 3px rgba(0,0,0,0.08);text-align:center;">
-            <div style="font-weight:bold;color:#2c3e50;margin-bottom:0.5rem;">${month}</div>
-            <div style="border-top:3px solid #3498db;padding-top:0.5rem;margin-bottom:0.5rem;">
-                <div style="font-size:0.75rem;color:#666;">BCS</div>
-                <div style="font-size:1.2rem;font-weight:bold;color:#2c3e50;">¥${bcsRev.toLocaleString()}</div>
-            </div>
-            <div style="border-top:3px solid #e74c3c;padding-top:0.5rem;">
-                <div style="font-size:0.75rem;color:#666;">BCBP</div>
-                <div style="font-size:1.2rem;font-weight:bold;color:#2c3e50;">¥${bcbpRev.toLocaleString()}</div>
-            </div>
-        </div>`;
-    });
-    html += '</div>';
-    document.getElementById('revenue-3m').innerHTML = html;
+    function prevMonth(ym) {
+        const [y, m] = ym.split('-').map(Number);
+        const pm = m === 1 ? 12 : m - 1;
+        const py = m === 1 ? y - 1 : y;
+        return `${py}-${String(pm).padStart(2,'0')}`;
+    }
+
+    function prevYear(ym) {
+        const [y, m] = ym.split('-').map(Number);
+        return `${y-1}-${String(m).padStart(2,'0')}`;
+    }
+
+    function compareHtml(current, prev, isYen) {
+        if (prev === null || prev === 0) return '<span class="flat">- データなし</span>';
+        const diff = current - prev;
+        const pct = ((diff / prev) * 100).toFixed(1);
+        const sign = diff > 0 ? '+' : '';
+        const cls = diff > 0 ? 'up' : diff < 0 ? 'down' : 'flat';
+        const diffStr = isYen ? `${sign}¥${Math.abs(diff).toLocaleString()}` : `${sign}${diff}`;
+        return `<span class="${cls}">${diffStr} (${sign}${pct}%)</span>`;
+    }
+
+    function buildSection(targetId, bcsLabels, bcsValues, bcbpLabels, bcbpValues, isYen) {
+        const last3 = bcsLabels.slice(-3);
+        let html = '';
+        last3.forEach(month => {
+            const bcsVal = getVal(bcsLabels, bcsValues, month);
+            const bcbpVal = getVal(bcbpLabels, bcbpValues, month);
+            const bcsPm = getVal(bcsLabels, bcsValues, prevMonth(month));
+            const bcsPy = getVal(bcsLabels, bcsValues, prevYear(month));
+            const bcbpPm = getVal(bcbpLabels, bcbpValues, prevMonth(month));
+            const bcbpPy = getVal(bcbpLabels, bcbpValues, prevYear(month));
+
+            const fmtVal = (v) => isYen ? `¥${(v||0).toLocaleString()}` : (v||0).toLocaleString();
+
+            html += `
+            <div class="month-col">
+                <div class="month-label">${month}</div>
+                <div class="store-row bcs-row">
+                    <div class="store-name">BCS</div>
+                    <div class="main-value">${fmtVal(bcsVal)}</div>
+                    <div class="compare">前月比: ${compareHtml(bcsVal, bcsPm, isYen)}</div>
+                    <div class="compare">前年比: ${compareHtml(bcsVal, bcsPy, isYen)}</div>
+                </div>
+                <div class="store-row bp-row">
+                    <div class="store-name">BCBP</div>
+                    <div class="main-value">${fmtVal(bcbpVal)}</div>
+                    <div class="compare">前月比: ${compareHtml(bcbpVal, bcbpPm, isYen)}</div>
+                    <div class="compare">前年比: ${compareHtml(bcbpVal, bcbpPy, isYen)}</div>
+                </div>
+            </div>`;
+        });
+        document.getElementById(targetId).innerHTML = html;
+    }
+
+    // 売上
+    buildSection('revenue-3m',
+        paymentsData.bcs.monthly_revenue.labels, paymentsData.bcs.monthly_revenue.values,
+        paymentsData.bcbp.monthly_revenue.labels, paymentsData.bcbp.monthly_revenue.values,
+        true);
+
+    // アクティブ会員数
+    buildSection('members-3m',
+        dashboardExtra.bcs.labels, dashboardExtra.bcs.values,
+        dashboardExtra.bcbp.labels, dashboardExtra.bcbp.values,
+        false);
     </script>
 </body>
 </html>
