@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>会員情報 - 勉強カフェ新宿</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <header>
+        <h1>勉強カフェ新宿エリア データダッシュボード</h1>
+    </header>
+    <main>
+        <a href="../dashboard.html" class="back-link">&larr; トップに戻る</a>
+        <h1 class="page-title">会員情報</h1>
+        <div class="data-period" id="period">
+            <strong>データ期間：</strong> 読み込み中...
+        </div>
+
+        <div class="stats-grid" id="stats"></div>
+
+        <div class="tab-container">
+            <div class="tab-buttons">
+                <button class="tab-btn active" onclick="switchTab('overview')">概要</button>
+                <button class="tab-btn" onclick="switchTab('bcs')">BCS 新宿スタジオ</button>
+                <button class="tab-btn" onclick="switchTab('bcbp')">BCBP BPスタジオ</button>
+                <button class="tab-btn" onclick="switchTab('hearing')">入会ヒヤリング</button>
+            </div>
+
+            <div class="tab-content active" id="tab-overview">
+                <div class="two-col">
+                    <div class="chart-section">
+                        <h2>BCS 契約ステータス</h2>
+                        <div class="chart-container"><canvas id="statusBcsChart"></canvas></div>
+                    </div>
+                    <div class="chart-section">
+                        <h2>BCBP 契約ステータス</h2>
+                        <div class="chart-container"><canvas id="statusBcbpChart"></canvas></div>
+                    </div>
+                </div>
+                <div class="chart-section">
+                    <h2>月別入会数推移</h2>
+                    <div class="chart-container"><canvas id="joinChart"></canvas></div>
+                </div>
+                <div class="chart-section">
+                    <h2>月別退会数推移</h2>
+                    <div class="chart-container"><canvas id="leaveChart"></canvas></div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="tab-bcs">
+                <div class="chart-section">
+                    <h2>BCS プラン分布</h2>
+                    <div class="chart-container"><canvas id="planBcsChart"></canvas></div>
+                </div>
+                <div class="chart-section">
+                    <h2>BCS 契約中会員一覧</h2>
+                    <div class="filter-bar">
+                        <input type="text" id="bcs-search" placeholder="会員番号・名前で検索..." oninput="filterTable('bcs')">
+                    </div>
+                    <div class="data-table-wrapper" style="max-height:500px;overflow-y:auto;">
+                        <table class="data-table" id="bcs-table">
+                            <thead><tr><th>状態</th><th>会員番号</th><th>氏名</th><th>プラン</th><th>契約日</th><th>月額</th><th>目標</th></tr></thead>
+                            <tbody id="bcs-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="tab-bcbp">
+                <div class="chart-section">
+                    <h2>BCBP プラン分布</h2>
+                    <div class="chart-container"><canvas id="planBcbpChart"></canvas></div>
+                </div>
+                <div class="chart-section">
+                    <h2>BCBP 契約中会員一覧</h2>
+                    <div class="filter-bar">
+                        <input type="text" id="bcbp-search" placeholder="会員番号・名前で検索..." oninput="filterTable('bcbp')">
+                    </div>
+                    <div class="data-table-wrapper" style="max-height:500px;overflow-y:auto;">
+                        <table class="data-table" id="bcbp-table">
+                            <thead><tr><th>状態</th><th>会員番号</th><th>氏名</th><th>プラン</th><th>契約日</th><th>月額</th><th>目標</th></tr></thead>
+                            <tbody id="bcbp-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="tab-hearing">
+                <div class="two-col">
+                    <div class="chart-section">
+                        <h2>職業分布</h2>
+                        <div class="chart-container"><canvas id="jobChart"></canvas></div>
+                    </div>
+                    <div class="chart-section">
+                        <h2>知ったきっかけ</h2>
+                        <div class="chart-container"><canvas id="channelChart"></canvas></div>
+                    </div>
+                </div>
+                <div class="two-col">
+                    <div class="chart-section">
+                        <h2>入会目的</h2>
+                        <div class="chart-container"><canvas id="purposeChart"></canvas></div>
+                    </div>
+                    <div class="chart-section">
+                        <h2>入会の決め手</h2>
+                        <div class="chart-container"><canvas id="decidingChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <footer><p>&copy; 勉強カフェ新宿エリア</p></footer>
+
+    <script src="../data/members.js"></script>
+    <script>
+    if (sessionStorage.getItem('bc_auth') !== 'ok') { window.location.href = '../index.html'; }
+    let memberData = null;
+
+    function switchTab(tab) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        document.getElementById('tab-' + tab).classList.add('active');
+        event.target.classList.add('active');
+    }
+
+    function filterTable(store) {
+        const query = document.getElementById(store + '-search').value.toLowerCase();
+        const rows = document.querySelectorAll(`#${store}-tbody tr`);
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(query) ? '' : 'none';
+        });
+    }
+
+    function createPieChart(canvasId, dataObj) {
+        const labels = Object.keys(dataObj);
+        const values = Object.values(dataObj);
+        new Chart(document.getElementById(canvasId), {
+            type: 'doughnut',
+            data: {
+                labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: labels.map((_, i) =>
+                        `hsl(${i * 360 / labels.length}, 55%, 55%)`)
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'right', labels: { font: { size: 10 } } } }
+            }
+        });
+    }
+
+    function createBarChart(canvasId, dataObj, color) {
+        const labels = Object.keys(dataObj);
+        const values = Object.values(dataObj);
+        new Chart(document.getElementById(canvasId), {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: color || 'rgba(52,152,219,0.7)'
+                }]
+            },
+            options: {
+                responsive: true,
+                indexAxis: 'y',
+                plugins: { legend: { display: false } },
+                scales: { x: { beginAtZero: true } }
+            }
+        });
+    }
+
+    function renderMemberTable(members, tbodyId) {
+        const tbody = document.getElementById(tbodyId);
+        tbody.innerHTML = members.map(m => `
+            <tr style="${m.is_active ? '' : 'opacity:0.5;'}">
+                <td style="color:${m.is_active ? '#27ae60' : '#e67e22'};font-weight:bold;">${m.is_active ? 'アクティブ' : '休会'}</td>
+                <td>${m.id}</td>
+                <td>${m.name}</td>
+                <td>${m.plan}</td>
+                <td>${m.join_date}</td>
+                <td>${m.monthly_fee}</td>
+                <td>${m.goal}</td>
+            </tr>
+        `).join('');
+    }
+
+    function init() {
+        memberData = membersData;
+        const d = memberData;
+
+        document.getElementById('period').innerHTML =
+            `<strong>データ期間：</strong> ${d.period.from} / ${d.period.to}`;
+
+        document.getElementById('stats').innerHTML = `
+            <div class="stat-card bcs">
+                <div class="stat-value">${d.bcs.total_truly_active}</div>
+                <div class="stat-label">BCS アクティブ会員</div>
+            </div>
+            <div class="stat-card warn">
+                <div class="stat-value">${d.bcs.total_inactive_plan}</div>
+                <div class="stat-label">BCS 休会中（ミニッツ/カムバック）</div>
+            </div>
+            <div class="stat-card bp">
+                <div class="stat-value">${d.bcbp.total_truly_active}</div>
+                <div class="stat-label">BCBP アクティブ会員</div>
+            </div>
+            <div class="stat-card warn">
+                <div class="stat-value">${d.bcbp.total_inactive_plan}</div>
+                <div class="stat-label">BCBP 休会中（ミニッツ/カムバック）</div>
+            </div>
+            <div class="stat-card total">
+                <div class="stat-value">${d.bcs.total_contracted}</div>
+                <div class="stat-label">BCS 契約中（全体）</div>
+            </div>
+            <div class="stat-card total">
+                <div class="stat-value">${d.bcbp.total_contracted}</div>
+                <div class="stat-label">BCBP 契約中（全体）</div>
+            </div>
+        `;
+
+        // Status charts
+        createPieChart('statusBcsChart', d.bcs.status);
+        createPieChart('statusBcbpChart', d.bcbp.status);
+
+        // Join/Leave charts
+        const allJoinMonths = [...new Set([...d.bcs.monthly_join.labels, ...d.bcbp.monthly_join.labels])].sort();
+        const bcsJoinMap = {};
+        d.bcs.monthly_join.labels.forEach((m, i) => bcsJoinMap[m] = d.bcs.monthly_join.values[i]);
+        const bcbpJoinMap = {};
+        d.bcbp.monthly_join.labels.forEach((m, i) => bcbpJoinMap[m] = d.bcbp.monthly_join.values[i]);
+
+        new Chart(document.getElementById('joinChart'), {
+            type: 'bar',
+            data: {
+                labels: allJoinMonths,
+                datasets: [
+                    { label: 'BCS', data: allJoinMonths.map(m => bcsJoinMap[m] || 0), backgroundColor: 'rgba(52,152,219,0.7)' },
+                    { label: 'BCBP', data: allJoinMonths.map(m => bcbpJoinMap[m] || 0), backgroundColor: 'rgba(231,76,60,0.7)' }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: { x: { ticks: { maxTicksLimit: 20 } }, y: { beginAtZero: true } }
+            }
+        });
+
+        const allLeaveMonths = [...new Set([...d.bcs.monthly_leave.labels, ...d.bcbp.monthly_leave.labels])].sort();
+        const bcsLeaveMap = {};
+        d.bcs.monthly_leave.labels.forEach((m, i) => bcsLeaveMap[m] = d.bcs.monthly_leave.values[i]);
+        const bcbpLeaveMap = {};
+        d.bcbp.monthly_leave.labels.forEach((m, i) => bcbpLeaveMap[m] = d.bcbp.monthly_leave.values[i]);
+
+        new Chart(document.getElementById('leaveChart'), {
+            type: 'bar',
+            data: {
+                labels: allLeaveMonths,
+                datasets: [
+                    { label: 'BCS', data: allLeaveMonths.map(m => bcsLeaveMap[m] || 0), backgroundColor: 'rgba(52,152,219,0.7)' },
+                    { label: 'BCBP', data: allLeaveMonths.map(m => bcbpLeaveMap[m] || 0), backgroundColor: 'rgba(231,76,60,0.7)' }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: { x: { ticks: { maxTicksLimit: 20 } }, y: { beginAtZero: true } }
+            }
+        });
+
+        // Plan charts
+        createPieChart('planBcsChart', d.bcs.plans);
+        createPieChart('planBcbpChart', d.bcbp.plans);
+
+        // Member tables
+        renderMemberTable(d.bcs.active_members, 'bcs-tbody');
+        renderMemberTable(d.bcbp.active_members, 'bcbp-tbody');
+
+        // Hearing charts
+        createBarChart('jobChart', d.hearing.jobs, 'rgba(46,204,113,0.7)');
+        createBarChart('channelChart', d.hearing.channels, 'rgba(155,89,182,0.7)');
+        createBarChart('purposeChart', d.hearing.purposes, 'rgba(52,152,219,0.7)');
+        createBarChart('decidingChart', d.hearing.deciding_factors, 'rgba(230,126,34,0.7)');
+    }
+    init();
+    </script>
+</body>
+</html>

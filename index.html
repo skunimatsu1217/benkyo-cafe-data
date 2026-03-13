@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>勉強カフェ新宿 データ管理 - ログイン</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .login-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 70vh;
+        }
+        .login-box {
+            background: #fff;
+            border-radius: 12px;
+            padding: 2.5rem;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+        .login-box h2 {
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+        .login-box p {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+        .login-box input[type="password"] {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            transition: border-color 0.2s;
+        }
+        .login-box input[type="password"]:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        .login-box button {
+            width: 100%;
+            padding: 0.8rem;
+            background: #2c3e50;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .login-box button:hover {
+            background: #34495e;
+        }
+        .login-error {
+            color: #e74c3c;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>勉強カフェ新宿エリア データダッシュボード</h1>
+    </header>
+    <main>
+        <div class="login-wrapper">
+            <div class="login-box">
+                <h2>ログイン</h2>
+                <p>パスワードを入力してください</p>
+                <form onsubmit="return handleLogin()">
+                    <input type="password" id="password" placeholder="パスワード" autofocus>
+                    <button type="submit">ログイン</button>
+                </form>
+                <div class="login-error" id="error">パスワードが正しくありません</div>
+            </div>
+        </div>
+    </main>
+    <footer><p>&copy; 勉強カフェ新宿エリア</p></footer>
+    <script>
+    // Check if already authenticated
+    if (sessionStorage.getItem('bc_auth') === 'ok') {
+        window.location.href = 'dashboard.html';
+    }
+
+    function handleLogin() {
+        const pw = document.getElementById('password').value;
+        // Simple hash check (SHA-256 of password)
+        const encoder = new TextEncoder();
+        crypto.subtle.digest('SHA-256', encoder.encode(pw)).then(hash => {
+            const hashHex = Array.from(new Uint8Array(hash))
+                .map(b => b.toString(16).padStart(2, '0')).join('');
+            // SHA-256 hash check
+            if (hashHex === 'caca9e026d61a5cc5f60294b44752a13377582797ef998befc7318b892122148') {
+                sessionStorage.setItem('bc_auth', 'ok');
+                window.location.href = 'dashboard.html';
+            } else {
+                document.getElementById('error').style.display = 'block';
+            }
+        });
+        return false;
+    }
+    </script>
+</body>
+</html>

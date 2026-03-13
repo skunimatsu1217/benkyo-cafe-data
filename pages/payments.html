@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>支払い・プラン情報 - 勉強カフェ新宿</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <header>
+        <h1>勉強カフェ新宿エリア データダッシュボード</h1>
+    </header>
+    <main>
+        <a href="../dashboard.html" class="back-link">&larr; トップに戻る</a>
+        <h1 class="page-title">支払い・プラン情報</h1>
+        <div class="data-period" id="period">
+            <strong>データ期間：</strong> 読み込み中...
+        </div>
+
+        <div class="stats-grid" id="stats"></div>
+
+        <div class="chart-section">
+            <h2>月別売上推移</h2>
+            <div class="chart-container">
+                <canvas id="revenueChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-section">
+            <h2>月別決済件数推移</h2>
+            <div class="chart-container">
+                <canvas id="countChart"></canvas>
+            </div>
+        </div>
+
+        <div class="two-col">
+            <div class="chart-section">
+                <h2>BCS 課金種別</h2>
+                <div class="chart-container"><canvas id="typeBcsChart"></canvas></div>
+            </div>
+            <div class="chart-section">
+                <h2>BCBP 課金種別</h2>
+                <div class="chart-container"><canvas id="typeBcbpChart"></canvas></div>
+            </div>
+        </div>
+
+        <div class="two-col">
+            <div class="chart-section">
+                <h2>BCS プラン別売上 TOP15</h2>
+                <div class="chart-container"><canvas id="planRevBcsChart"></canvas></div>
+            </div>
+            <div class="chart-section">
+                <h2>BCBP プラン別売上 TOP15</h2>
+                <div class="chart-container"><canvas id="planRevBcbpChart"></canvas></div>
+            </div>
+        </div>
+    </main>
+    <footer><p>&copy; 勉強カフェ新宿エリア</p></footer>
+
+    <script src="../data/payments.js"></script>
+    <script>
+    if (sessionStorage.getItem('bc_auth') !== 'ok') { window.location.href = '../index.html'; }
+    function createPieChart(canvasId, dataObj) {
+        const labels = Object.keys(dataObj);
+        const values = Object.values(dataObj);
+        new Chart(document.getElementById(canvasId), {
+            type: 'doughnut',
+            data: {
+                labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: labels.map((_, i) =>
+                        `hsl(${i * 360 / labels.length}, 55%, 55%)`)
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'right', labels: { font: { size: 10 } } } }
+            }
+        });
+    }
+
+    function createHBarChart(canvasId, dataObj, color) {
+        const entries = Object.entries(dataObj).slice(0, 15);
+        new Chart(document.getElementById(canvasId), {
+            type: 'bar',
+            data: {
+                labels: entries.map(e => e[0].length > 20 ? e[0].slice(0, 20) + '...' : e[0]),
+                datasets: [{
+                    data: entries.map(e => e[1]),
+                    backgroundColor: color
+                }]
+            },
+            options: {
+                responsive: true,
+                indexAxis: 'y',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => '¥' + ctx.parsed.x.toLocaleString()
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        ticks: { callback: v => '¥' + (v / 10000).toFixed(0) + '万' }
+                    }
+                }
+            }
+        });
+    }
+
+    function init() {
+        const data = paymentsData;
+
+        document.getElementById('period').innerHTML =
+            `<strong>データ期間：</strong> ${data.period.from} ～ ${data.period.to}`;
+
+        document.getElementById('stats').innerHTML = `
+            <div class="stat-card bcs">
+                <div class="stat-value">¥${data.bcs.total_revenue.toLocaleString()}</div>
+                <div class="stat-label">BCS 累計売上</div>
+            </div>
+            <div class="stat-card bp">
+                <div class="stat-value">¥${data.bcbp.total_revenue.toLocaleString()}</div>
+                <div class="stat-label">BCBP 累計売上</div>
+            </div>
+            <div class="stat-card bcs">
+                <div class="stat-value">${data.bcs.total_records.toLocaleString()}</div>
+                <div class="stat-label">BCS 決済件数</div>
+            </div>
+            <div class="stat-card bp">
+                <div class="stat-value">${data.bcbp.total_records.toLocaleString()}</div>
+                <div class="stat-label">BCBP 決済件数</div>
+            </div>
+        `;
+
+        // Revenue chart
+        const allMonths = [...new Set([
+            ...data.bcs.monthly_revenue.labels,
+            ...data.bcbp.monthly_revenue.labels
+        ])].sort();
+
+        const bcsRevMap = {};
+        data.bcs.monthly_revenue.labels.forEach((m, i) => bcsRevMap[m] = data.bcs.monthly_revenue.values[i]);
+        const bcbpRevMap = {};
+        data.bcbp.monthly_revenue.labels.forEach((m, i) => bcbpRevMap[m] = data.bcbp.monthly_revenue.values[i]);
+
+        new Chart(document.getElementById('revenueChart'), {
+            type: 'line',
+            data: {
+                labels: allMonths,
+                datasets: [
+                    {
+                        label: 'BCS',
+                        data: allMonths.map(m => bcsRevMap[m] || 0),
+                        borderColor: '#3498db',
+                        backgroundColor: 'rgba(52,152,219,0.1)',
+                        fill: true, tension: 0.3
+                    },
+                    {
+                        label: 'BCBP',
+                        data: allMonths.map(m => bcbpRevMap[m] || 0),
+                        borderColor: '#e74c3c',
+                        backgroundColor: 'rgba(231,76,60,0.1)',
+                        fill: true, tension: 0.3
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: { ticks: { maxTicksLimit: 20 } },
+                    y: {
+                        beginAtZero: true,
+                        ticks: { callback: v => '¥' + (v / 10000).toFixed(0) + '万' }
+                    }
+                }
+            }
+        });
+
+        // Count chart
+        const bcsCountMap = {};
+        data.bcs.monthly_revenue.labels.forEach((m, i) => bcsCountMap[m] = data.bcs.monthly_revenue.counts[i]);
+        const bcbpCountMap = {};
+        data.bcbp.monthly_revenue.labels.forEach((m, i) => bcbpCountMap[m] = data.bcbp.monthly_revenue.counts[i]);
+
+        new Chart(document.getElementById('countChart'), {
+            type: 'bar',
+            data: {
+                labels: allMonths,
+                datasets: [
+                    { label: 'BCS', data: allMonths.map(m => bcsCountMap[m] || 0), backgroundColor: 'rgba(52,152,219,0.7)' },
+                    { label: 'BCBP', data: allMonths.map(m => bcbpCountMap[m] || 0), backgroundColor: 'rgba(231,76,60,0.7)' }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: { ticks: { maxTicksLimit: 20 } },
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+
+        // Type charts
+        createPieChart('typeBcsChart', data.bcs.charge_types);
+        createPieChart('typeBcbpChart', data.bcbp.charge_types);
+
+        // Plan revenue charts
+        createHBarChart('planRevBcsChart', data.bcs.plan_revenue, 'rgba(52,152,219,0.7)');
+        createHBarChart('planRevBcbpChart', data.bcbp.plan_revenue, 'rgba(231,76,60,0.7)');
+    }
+    init();
+    </script>
+</body>
+</html>

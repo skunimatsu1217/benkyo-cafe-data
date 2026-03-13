@@ -1,0 +1,4 @@
+# 個人情報を含む元データ（GitHubにpushしない）
+*.csv
+*.xlsx
+scripts/

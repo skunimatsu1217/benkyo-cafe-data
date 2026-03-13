@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>勉強カフェ新宿 データ管理</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <h1>勉強カフェ新宿エリア データダッシュボード</h1>
+        <p class="subtitle">新宿スタジオ (BCS) ・ BPスタジオ (BCBP) 2店舗のデータ分析</p>
+    </header>
+    <main>
+        <div class="stats-grid" id="overview-stats">
+            <div class="stat-card total">
+                <div class="stat-value" id="total-usage">-</div>
+                <div class="stat-label">総利用回数</div>
+            </div>
+            <div class="stat-card bcs">
+                <div class="stat-value" id="active-bcs">-</div>
+                <div class="stat-label">BCS アクティブ会員</div>
+            </div>
+            <div class="stat-card bp">
+                <div class="stat-value" id="active-bp">-</div>
+                <div class="stat-label">BCBP アクティブ会員</div>
+            </div>
+            <div class="stat-card total">
+                <div class="stat-value" id="total-revenue">-</div>
+                <div class="stat-label">累計売上</div>
+            </div>
+        </div>
+
+        <nav class="data-links">
+            <a href="pages/usage.html" class="card">
+                <h2>利用履歴</h2>
+                <p>店舗ごとの月別利用回数、プラン別利用、時間外利用（エラー）の推移</p>
+            </a>
+            <a href="pages/members.html" class="card">
+                <h2>会員情報</h2>
+                <p>会員数推移、契約ステータス、プラン分布、入会ヒヤリング分析</p>
+            </a>
+            <a href="pages/payments.html" class="card">
+                <h2>支払い・プラン情報</h2>
+                <p>月別売上推移、プラン別売上、課金種別、決済ステータス</p>
+            </a>
+            <a href="pages/reservations.html" class="card">
+                <h2>予約・来店報告</h2>
+                <p>トライアル・見学の来店数、入会率推移、予約経路分析</p>
+            </a>
+        </nav>
+    </main>
+    <footer>
+        <p>&copy; 勉強カフェ新宿エリア</p>
+    </footer>
+    <script src="data/usage.js"></script>
+    <script src="data/members.js"></script>
+    <script src="data/payments.js"></script>
+    <script>
+    // Auth check
+    if (sessionStorage.getItem('bc_auth') !== 'ok') {
+        window.location.href = 'index.html';
+    }
+    document.getElementById('total-usage').textContent =
+        (usageData.summary.total_bcs + usageData.summary.total_bp).toLocaleString();
+    document.getElementById('active-bcs').textContent = membersData.bcs.total_truly_active;
+    document.getElementById('active-bp').textContent = membersData.bcbp.total_truly_active;
+    const totalRev = paymentsData.bcs.total_revenue + paymentsData.bcbp.total_revenue;
+    document.getElementById('total-revenue').textContent = '¥' + totalRev.toLocaleString();
+    </script>
+</body>
+</html>

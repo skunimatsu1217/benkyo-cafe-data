@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>利用履歴 - 勉強カフェ新宿</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <header>
+        <h1>勉強カフェ新宿エリア データダッシュボード</h1>
+    </header>
+    <main>
+        <a href="../dashboard.html" class="back-link">&larr; トップに戻る</a>
+        <h1 class="page-title">利用履歴</h1>
+        <div class="data-period" id="period">
+            <strong>データ期間：</strong> 読み込み中...
+        </div>
+
+        <div class="stats-grid" id="stats"></div>
+
+        <div class="chart-section">
+            <h2>月別利用回数推移</h2>
+            <div class="chart-container">
+                <canvas id="monthlyChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-section">
+            <h2>月別時間外利用（エラー）推移</h2>
+            <p style="font-size:0.85rem;color:#666;margin-bottom:0.5rem;">プラン外の時間帯に利用した回数（契約時間外利用）</p>
+            <div class="chart-container">
+                <canvas id="errorChart"></canvas>
+            </div>
+        </div>
+
+        <div class="two-col">
+            <div class="chart-section">
+                <h2>BCS プラン別利用回数</h2>
+                <div class="chart-container">
+                    <canvas id="planBcsChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-section">
+                <h2>BCBP プラン別利用回数</h2>
+                <div class="chart-container">
+                    <canvas id="planBpChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </main>
+    <footer><p>&copy; 勉強カフェ新宿エリア</p></footer>
+
+    <script src="../data/usage.js"></script>
+    <script>
+    if (sessionStorage.getItem('bc_auth') !== 'ok') { window.location.href = '../index.html'; }
+    function init() {
+        const data = usageData;
+
+        document.getElementById('period').innerHTML =
+            `<strong>データ期間：</strong> ${data.period.from} ～ ${data.period.to}`;
+
+        document.getElementById('stats').innerHTML = `
+            <div class="stat-card bcs">
+                <div class="stat-value">${data.summary.total_bcs.toLocaleString()}</div>
+                <div class="stat-label">BCS 総利用回数</div>
+            </div>
+            <div class="stat-card bp">
+                <div class="stat-value">${data.summary.total_bp.toLocaleString()}</div>
+                <div class="stat-label">BCBP 総利用回数</div>
+            </div>
+            <div class="stat-card warn">
+                <div class="stat-value">${data.summary.total_error_bcs.toLocaleString()}</div>
+                <div class="stat-label">BCS 時間外利用</div>
+            </div>
+            <div class="stat-card warn">
+                <div class="stat-value">${data.summary.total_error_bp.toLocaleString()}</div>
+                <div class="stat-label">BCBP 時間外利用</div>
+            </div>
+        `;
+
+        // Monthly usage chart
+        new Chart(document.getElementById('monthlyChart'), {
+            type: 'line',
+            data: {
+                labels: data.monthly.labels,
+                datasets: [
+                    {
+                        label: 'BCS (新宿スタジオ)',
+                        data: data.monthly.bcs,
+                        borderColor: '#3498db',
+                        backgroundColor: 'rgba(52,152,219,0.1)',
+                        fill: true,
+                        tension: 0.3
+                    },
+                    {
+                        label: 'BCBP (BPスタジオ)',
+                        data: data.monthly.bp,
+                        borderColor: '#e74c3c',
+                        backgroundColor: 'rgba(231,76,60,0.1)',
+                        fill: true,
+                        tension: 0.3
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'top' } },
+                scales: {
+                    x: { ticks: { maxTicksLimit: 20 } },
+                    y: { beginAtZero: true, title: { display: true, text: '利用回数' } }
+                }
+            }
+        });
+
+        // Error chart
+        new Chart(document.getElementById('errorChart'), {
+            type: 'bar',
+            data: {
+                labels: data.monthly.labels,
+                datasets: [
+                    {
+                        label: 'BCS 時間外',
+                        data: data.monthly.bcs_error,
+                        backgroundColor: 'rgba(52,152,219,0.6)'
+                    },
+                    {
+                        label: 'BCBP 時間外',
+                        data: data.monthly.bp_error,
+                        backgroundColor: 'rgba(231,76,60,0.6)'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'top' } },
+                scales: {
+                    x: { ticks: { maxTicksLimit: 20 } },
+                    y: { beginAtZero: true, title: { display: true, text: '時間外利用回数' } }
+                }
+            }
+        });
+
+        // Plan charts
+        function createPlanChart(canvasId, planData, color) {
+            const labels = Object.keys(planData);
+            const values = Object.values(planData);
+            new Chart(document.getElementById(canvasId), {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: labels.map((_, i) =>
+                            `hsl(${(i * 360 / labels.length) + (color === 'blue' ? 200 : 0)}, 60%, 55%)`)
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'right', labels: { font: { size: 10 } } }
+                    }
+                }
+            });
+        }
+        createPlanChart('planBcsChart', data.plans.bcs, 'blue');
+        createPlanChart('planBpChart', data.plans.bp, 'red');
+    }
+    init();
+    </script>
+</body>
+</html>
