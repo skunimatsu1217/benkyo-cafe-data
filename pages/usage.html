@@ -6,6 +6,21 @@
     <title>利用履歴 - 勉強カフェ新宿</title>
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <style>
+        .store-toggle { display:flex; gap:0; margin-bottom:1rem; }
+        .store-toggle button {
+            padding:0.5rem 1.2rem; border:1px solid #ddd; background:#fff;
+            cursor:pointer; font-size:0.85rem; color:#666; transition:all 0.2s;
+        }
+        .store-toggle button:first-child { border-radius:4px 0 0 4px; }
+        .store-toggle button:last-child { border-radius:0 4px 4px 0; }
+        .store-toggle button.active { background:#2c3e50; color:#fff; border-color:#2c3e50; }
+
+        .heatmap-table { border-collapse:collapse; width:100%; font-size:0.75rem; }
+        .heatmap-table th, .heatmap-table td { padding:4px 6px; text-align:center; border:1px solid #eee; }
+        .heatmap-table th { background:#2c3e50; color:#fff; font-weight:500; }
+        .heatmap-table .row-label { background:#f5f5f5; font-weight:600; text-align:left; white-space:nowrap; }
+    </style>
 </head>
 <body>
     <header>
@@ -18,7 +33,24 @@
             <strong>データ期間：</strong> 読み込み中...
         </div>
 
+        <div class="store-toggle" id="storeToggle">
+            <button class="active" onclick="setStore('both')">両スタジオ</button>
+            <button onclick="setStore('bcs')">BCS のみ</button>
+            <button onclick="setStore('bp')">BCBP のみ</button>
+        </div>
+
         <div class="stats-grid" id="stats"></div>
+
+        <div class="chart-section">
+            <h2>曜日 x 時間帯 平均在館人数</h2>
+            <p style="font-size:0.85rem;color:#666;margin-bottom:0.5rem;">色が濃いほど混雑。全期間の平均値です。</p>
+            <div style="overflow-x:auto;" id="heatmap-dow"></div>
+        </div>
+
+        <div class="chart-section">
+            <h2>直近30日間 日別 x 時間帯 在館人数</h2>
+            <div style="overflow-x:auto;" id="heatmap-recent"></div>
+        </div>
 
         <div class="chart-section">
             <h2>月別利用回数推移</h2>
@@ -53,32 +85,117 @@
     <footer><p>&copy; 勉強カフェ新宿エリア</p></footer>
 
     <script src="../data/usage.js"></script>
+    <script src="../data/hourly.js"></script>
     <script>
     if (sessionStorage.getItem('bc_auth') !== 'ok') { window.location.href = '../index.html'; }
+
+    let currentStore = 'both';
+    const DOW_NAMES = ['月', '火', '水', '木', '金', '土', '日'];
+
+    function heatColor(val, max) {
+        if (val === 0) return '#f8f9fa';
+        const ratio = Math.min(val / max, 1);
+        if (ratio < 0.25) return '#d4edda';
+        if (ratio < 0.5) return '#fff3cd';
+        if (ratio < 0.75) return '#ffeaa7';
+        return '#e74c3c';
+    }
+
+    function buildHeatmapTable(rowLabels, hourlyDataArr, maxVal) {
+        // hourlyDataArr: array of [0..23] arrays
+        let html = '<table class="heatmap-table"><thead><tr><th></th>';
+        for (let h = 6; h <= 23; h++) html += `<th>${h}:00</th>`;
+        html += '</tr></thead><tbody>';
+        rowLabels.forEach((label, i) => {
+            html += `<tr><td class="row-label">${label}</td>`;
+            for (let h = 6; h <= 23; h++) {
+                const v = hourlyDataArr[i][h];
+                const bg = heatColor(v, maxVal);
+                const textColor = v > maxVal * 0.75 ? '#fff' : '#333';
+                html += `<td style="background:${bg};color:${textColor};font-weight:${v > 0 ? 'bold' : 'normal'}">${v > 0 ? v : ''}</td>`;
+            }
+            html += '</tr>';
+        });
+        html += '</tbody></table>';
+        return html;
+    }
+
+    function getHourlyValues(store, bcsArr, bpArr) {
+        if (store === 'bcs') return bcsArr;
+        if (store === 'bp') return bpArr;
+        return bcsArr.map((v, i) => Math.round((v + bpArr[i]) * 10) / 10);
+    }
+
+    function renderHeatmaps() {
+        const hd = hourlyData;
+
+        // DOW heatmap
+        const dowRows = [];
+        const dowLabels = [];
+        let dowMax = 0;
+        for (let d = 0; d < 7; d++) {
+            const bcsArr = hd.dow_avg.bcs[d] || new Array(24).fill(0);
+            const bpArr = hd.dow_avg.bp[d] || new Array(24).fill(0);
+            const vals = getHourlyValues(currentStore, bcsArr, bpArr);
+            dowRows.push(vals);
+            dowLabels.push(DOW_NAMES[d]);
+            vals.forEach(v => { if (v > dowMax) dowMax = v; });
+        }
+        document.getElementById('heatmap-dow').innerHTML = buildHeatmapTable(dowLabels, dowRows, dowMax);
+
+        // Recent daily heatmap
+        const dates = Object.keys(hd.recent_daily).sort().reverse();
+        const recentRows = [];
+        const recentLabels = [];
+        let recentMax = 0;
+        dates.forEach(d => {
+            const entry = hd.recent_daily[d];
+            const bcsArr = entry.bcs;
+            const bpArr = entry.bp;
+            const vals = getHourlyValues(currentStore, bcsArr, bpArr);
+            recentRows.push(vals);
+            const dt = new Date(d.replace(/\//g, '-'));
+            const dow = DOW_NAMES[dt.getDay() === 0 ? 6 : dt.getDay() - 1];
+            recentLabels.push(`${d} (${dow})`);
+            vals.forEach(v => { if (v > recentMax) recentMax = v; });
+        });
+        document.getElementById('heatmap-recent').innerHTML = buildHeatmapTable(recentLabels, recentRows, recentMax);
+    }
+
+    function setStore(store) {
+        currentStore = store;
+        document.querySelectorAll('#storeToggle button').forEach(b => b.classList.remove('active'));
+        event.target.classList.add('active');
+        renderHeatmaps();
+        renderStats();
+    }
+
+    function renderStats() {
+        const data = usageData;
+        if (currentStore === 'bcs') {
+            document.getElementById('stats').innerHTML = `
+                <div class="stat-card bcs"><div class="stat-value">${data.summary.total_bcs.toLocaleString()}</div><div class="stat-label">BCS 総利用回数</div></div>
+                <div class="stat-card warn"><div class="stat-value">${data.summary.total_error_bcs.toLocaleString()}</div><div class="stat-label">BCS 時間外利用</div></div>`;
+        } else if (currentStore === 'bp') {
+            document.getElementById('stats').innerHTML = `
+                <div class="stat-card bp"><div class="stat-value">${data.summary.total_bp.toLocaleString()}</div><div class="stat-label">BCBP 総利用回数</div></div>
+                <div class="stat-card warn"><div class="stat-value">${data.summary.total_error_bp.toLocaleString()}</div><div class="stat-label">BCBP 時間外利用</div></div>`;
+        } else {
+            document.getElementById('stats').innerHTML = `
+                <div class="stat-card bcs"><div class="stat-value">${data.summary.total_bcs.toLocaleString()}</div><div class="stat-label">BCS 総利用回数</div></div>
+                <div class="stat-card bp"><div class="stat-value">${data.summary.total_bp.toLocaleString()}</div><div class="stat-label">BCBP 総利用回数</div></div>
+                <div class="stat-card warn"><div class="stat-value">${data.summary.total_error_bcs.toLocaleString()}</div><div class="stat-label">BCS 時間外利用</div></div>
+                <div class="stat-card warn"><div class="stat-value">${data.summary.total_error_bp.toLocaleString()}</div><div class="stat-label">BCBP 時間外利用</div></div>`;
+        }
+    }
+
     function init() {
         const data = usageData;
-
         document.getElementById('period').innerHTML =
             `<strong>データ期間：</strong> ${data.period.from} ～ ${data.period.to}`;
 
-        document.getElementById('stats').innerHTML = `
-            <div class="stat-card bcs">
-                <div class="stat-value">${data.summary.total_bcs.toLocaleString()}</div>
-                <div class="stat-label">BCS 総利用回数</div>
-            </div>
-            <div class="stat-card bp">
-                <div class="stat-value">${data.summary.total_bp.toLocaleString()}</div>
-                <div class="stat-label">BCBP 総利用回数</div>
-            </div>
-            <div class="stat-card warn">
-                <div class="stat-value">${data.summary.total_error_bcs.toLocaleString()}</div>
-                <div class="stat-label">BCS 時間外利用</div>
-            </div>
-            <div class="stat-card warn">
-                <div class="stat-value">${data.summary.total_error_bp.toLocaleString()}</div>
-                <div class="stat-label">BCBP 時間外利用</div>
-            </div>
-        `;
+        renderStats();
+        renderHeatmaps();
 
         // Monthly usage chart
         new Chart(document.getElementById('monthlyChart'), {
@@ -86,31 +203,14 @@
             data: {
                 labels: data.monthly.labels,
                 datasets: [
-                    {
-                        label: 'BCS (新宿スタジオ)',
-                        data: data.monthly.bcs,
-                        borderColor: '#3498db',
-                        backgroundColor: 'rgba(52,152,219,0.1)',
-                        fill: true,
-                        tension: 0.3
-                    },
-                    {
-                        label: 'BCBP (BPスタジオ)',
-                        data: data.monthly.bp,
-                        borderColor: '#e74c3c',
-                        backgroundColor: 'rgba(231,76,60,0.1)',
-                        fill: true,
-                        tension: 0.3
-                    }
+                    { label: 'BCS (新宿スタジオ)', data: data.monthly.bcs, borderColor: '#3498db', backgroundColor: 'rgba(52,152,219,0.1)', fill: true, tension: 0.3 },
+                    { label: 'BCBP (BPスタジオ)', data: data.monthly.bp, borderColor: '#e74c3c', backgroundColor: 'rgba(231,76,60,0.1)', fill: true, tension: 0.3 }
                 ]
             },
             options: {
                 responsive: true,
                 plugins: { legend: { position: 'top' } },
-                scales: {
-                    x: { ticks: { maxTicksLimit: 20 } },
-                    y: { beginAtZero: true, title: { display: true, text: '利用回数' } }
-                }
+                scales: { x: { ticks: { maxTicksLimit: 20 } }, y: { beginAtZero: true, title: { display: true, text: '利用回数' } } }
             }
         });
 
@@ -120,25 +220,14 @@
             data: {
                 labels: data.monthly.labels,
                 datasets: [
-                    {
-                        label: 'BCS 時間外',
-                        data: data.monthly.bcs_error,
-                        backgroundColor: 'rgba(52,152,219,0.6)'
-                    },
-                    {
-                        label: 'BCBP 時間外',
-                        data: data.monthly.bp_error,
-                        backgroundColor: 'rgba(231,76,60,0.6)'
-                    }
+                    { label: 'BCS 時間外', data: data.monthly.bcs_error, backgroundColor: 'rgba(52,152,219,0.6)' },
+                    { label: 'BCBP 時間外', data: data.monthly.bp_error, backgroundColor: 'rgba(231,76,60,0.6)' }
                 ]
             },
             options: {
                 responsive: true,
                 plugins: { legend: { position: 'top' } },
-                scales: {
-                    x: { ticks: { maxTicksLimit: 20 } },
-                    y: { beginAtZero: true, title: { display: true, text: '時間外利用回数' } }
-                }
+                scales: { x: { ticks: { maxTicksLimit: 20 } }, y: { beginAtZero: true, title: { display: true, text: '時間外利用回数' } } }
             }
         });
 
@@ -148,20 +237,8 @@
             const values = Object.values(planData);
             new Chart(document.getElementById(canvasId), {
                 type: 'doughnut',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: values,
-                        backgroundColor: labels.map((_, i) =>
-                            `hsl(${(i * 360 / labels.length) + (color === 'blue' ? 200 : 0)}, 60%, 55%)`)
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { position: 'right', labels: { font: { size: 10 } } }
-                    }
-                }
+                data: { labels, datasets: [{ data: values, backgroundColor: labels.map((_, i) => `hsl(${(i * 360 / labels.length) + (color === 'blue' ? 200 : 0)}, 60%, 55%)`) }] },
+                options: { responsive: true, plugins: { legend: { position: 'right', labels: { font: { size: 10 } } } } }
             });
         }
         createPlanChart('planBcsChart', data.plans.bcs, 'blue');
