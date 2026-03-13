@@ -6,215 +6,243 @@
     <title>支払い・プラン情報 - 勉強カフェ新宿</title>
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <style>
+        .month-selector { display:flex; align-items:center; gap:0.5rem; margin-bottom:1rem; flex-wrap:wrap; }
+        .month-selector select { padding:0.4rem 0.8rem; border:1px solid #ddd; border-radius:4px; font-size:0.9rem; }
+        .month-selector label { font-size:0.85rem; color:#666; }
+        .store-toggle { display:flex; gap:0; margin-bottom:1rem; }
+        .store-toggle button { padding:0.5rem 1.2rem; border:1px solid #ddd; background:#fff; cursor:pointer; font-size:0.85rem; color:#666; }
+        .store-toggle button:first-child { border-radius:4px 0 0 4px; }
+        .store-toggle button:last-child { border-radius:0 4px 4px 0; }
+        .store-toggle button.active { background:#2c3e50; color:#fff; border-color:#2c3e50; }
+        .plan-bar { display:flex; align-items:center; margin-bottom:4px; font-size:0.8rem; }
+        .plan-bar .plan-name { width:160px; text-align:right; padding-right:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .plan-bar .bar-wrap { flex:1; background:#f0f0f0; border-radius:3px; height:20px; position:relative; }
+        .plan-bar .bar { height:100%; border-radius:3px; display:flex; align-items:center; padding-left:4px; color:#fff; font-size:0.7rem; font-weight:bold; min-width:1px; }
+        .plan-bar .count { margin-left:8px; color:#666; min-width:40px; }
+        .change-item { padding:4px 0; border-bottom:1px solid #f0f0f0; font-size:0.8rem; display:flex; gap:0.5rem; }
+        .change-item .arrow { color:#e74c3c; font-weight:bold; }
+    </style>
 </head>
 <body>
-    <header>
-        <h1>勉強カフェ新宿エリア データダッシュボード</h1>
-    </header>
+    <header><h1>勉強カフェ新宿エリア データダッシュボード</h1></header>
     <main>
         <a href="../dashboard.html" class="back-link">&larr; トップに戻る</a>
         <h1 class="page-title">支払い・プラン情報</h1>
-        <div class="data-period" id="period">
-            <strong>データ期間：</strong> 読み込み中...
+        <div class="data-period" id="period"><strong>データ期間：</strong> 読み込み中...</div>
+
+        <div class="store-toggle" id="storeToggle">
+            <button class="active" onclick="setStore('bcs')">BCS 新宿スタジオ</button>
+            <button onclick="setStore('bcbp')">BCBP BPスタジオ</button>
         </div>
 
         <div class="stats-grid" id="stats"></div>
 
         <div class="chart-section">
             <h2>月別売上推移</h2>
-            <div class="chart-container">
-                <canvas id="revenueChart"></canvas>
+            <div class="chart-container"><canvas id="revenueChart"></canvas></div>
+        </div>
+
+        <div class="chart-section">
+            <h2>プラン別会員数推移（直近24ヶ月）</h2>
+            <div class="chart-container"><canvas id="planTrendChart"></canvas></div>
+        </div>
+
+        <div class="chart-section">
+            <h2>月別プラン内訳</h2>
+            <div class="month-selector">
+                <label>表示月：</label>
+                <select id="monthSelect" onchange="renderMonthDetail()"></select>
+            </div>
+            <div class="two-col">
+                <div>
+                    <h3 style="font-size:0.95rem;margin-bottom:0.5rem;">プラン別人数</h3>
+                    <div id="monthPlanCount"></div>
+                </div>
+                <div>
+                    <h3 style="font-size:0.95rem;margin-bottom:0.5rem;">プラン別売上</h3>
+                    <div id="monthPlanRevenue"></div>
+                </div>
             </div>
         </div>
 
         <div class="chart-section">
-            <h2>月別決済件数推移</h2>
-            <div class="chart-container">
-                <canvas id="countChart"></canvas>
+            <h2>プラン変更履歴</h2>
+            <p style="font-size:0.85rem;color:#666;margin-bottom:0.5rem;">会員が月をまたいでプランを変更した記録</p>
+            <div class="two-col">
+                <div>
+                    <h3 style="font-size:0.95rem;margin-bottom:0.5rem;">よくある変更パターン TOP15</h3>
+                    <div id="topFlows"></div>
+                </div>
+                <div>
+                    <h3 style="font-size:0.95rem;margin-bottom:0.5rem;">選択月のプラン変更</h3>
+                    <div id="monthChanges"></div>
+                </div>
             </div>
         </div>
 
-        <div class="two-col">
-            <div class="chart-section">
-                <h2>BCS 課金種別</h2>
-                <div class="chart-container"><canvas id="typeBcsChart"></canvas></div>
-            </div>
-            <div class="chart-section">
-                <h2>BCBP 課金種別</h2>
-                <div class="chart-container"><canvas id="typeBcbpChart"></canvas></div>
-            </div>
-        </div>
-
-        <div class="two-col">
-            <div class="chart-section">
-                <h2>BCS プラン別売上 TOP15</h2>
-                <div class="chart-container"><canvas id="planRevBcsChart"></canvas></div>
-            </div>
-            <div class="chart-section">
-                <h2>BCBP プラン別売上 TOP15</h2>
-                <div class="chart-container"><canvas id="planRevBcbpChart"></canvas></div>
-            </div>
+        <div class="chart-section">
+            <h2>月別プラン変更件数推移</h2>
+            <div class="chart-container"><canvas id="changeChart"></canvas></div>
         </div>
     </main>
     <footer><p>&copy; 勉強カフェ新宿エリア</p></footer>
 
     <script src="../data/payments.js"></script>
+    <script src="../data/plan_detail.js"></script>
     <script>
     if (sessionStorage.getItem('bc_auth') !== 'ok') { window.location.href = '../index.html'; }
-    function createPieChart(canvasId, dataObj) {
-        const labels = Object.keys(dataObj);
-        const values = Object.values(dataObj);
-        new Chart(document.getElementById(canvasId), {
-            type: 'doughnut',
-            data: {
-                labels,
-                datasets: [{
-                    data: values,
-                    backgroundColor: labels.map((_, i) =>
-                        `hsl(${i * 360 / labels.length}, 55%, 55%)`)
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { position: 'right', labels: { font: { size: 10 } } } }
-            }
-        });
+
+    let currentStore = 'bcs';
+    let revenueChart, planTrendChart, changeChart;
+
+    const PLAN_COLORS = {};
+    function getPlanColor(plan, idx) {
+        if (!PLAN_COLORS[plan]) PLAN_COLORS[plan] = `hsl(${(idx * 37) % 360}, 55%, 55%)`;
+        return PLAN_COLORS[plan];
     }
 
-    function createHBarChart(canvasId, dataObj, color) {
-        const entries = Object.entries(dataObj).slice(0, 15);
-        new Chart(document.getElementById(canvasId), {
-            type: 'bar',
-            data: {
-                labels: entries.map(e => e[0].length > 20 ? e[0].slice(0, 20) + '...' : e[0]),
-                datasets: [{
-                    data: entries.map(e => e[1]),
-                    backgroundColor: color
-                }]
-            },
-            options: {
-                responsive: true,
-                indexAxis: 'y',
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            label: ctx => '¥' + ctx.parsed.x.toLocaleString()
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        beginAtZero: true,
-                        ticks: { callback: v => '¥' + (v / 10000).toFixed(0) + '万' }
-                    }
-                }
-            }
-        });
+    function setStore(store) {
+        currentStore = store;
+        document.querySelectorAll('#storeToggle button').forEach(b => b.classList.remove('active'));
+        event.target.classList.add('active');
+        renderAll();
     }
 
-    function init() {
-        const data = paymentsData;
+    function renderBars(containerId, dataObj, isYen) {
+        const sorted = Object.entries(dataObj).sort((a, b) => b[1] - a[1]);
+        const max = sorted.length > 0 ? sorted[0][1] : 1;
+        const container = document.getElementById(containerId);
+        container.innerHTML = sorted.map(([name, val], i) => {
+            const w = Math.max((val / max) * 100, 2);
+            const color = getPlanColor(name, i);
+            const display = isYen ? `¥${val.toLocaleString()}` : val;
+            return `<div class="plan-bar">
+                <div class="plan-name" title="${name}">${name}</div>
+                <div class="bar-wrap"><div class="bar" style="width:${w}%;background:${color}">${w > 15 ? display : ''}</div></div>
+                <div class="count">${display}</div>
+            </div>`;
+        }).join('');
+    }
+
+    function renderMonthDetail() {
+        const ym = document.getElementById('monthSelect').value;
+        const sd = planDetailData[currentStore];
+        const md = sd.monthly[ym];
+        if (!md) return;
+        renderBars('monthPlanCount', md.counts, false);
+        renderBars('monthPlanRevenue', md.revenue, true);
+
+        // Month changes
+        const changes = sd.changes.monthly[ym] || {};
+        const changeEntries = Object.entries(changes).sort((a, b) => b[1] - a[1]);
+        document.getElementById('monthChanges').innerHTML = changeEntries.length === 0
+            ? '<p style="color:#999;font-size:0.85rem;">この月のプラン変更はありません</p>'
+            : changeEntries.map(([flow, count]) =>
+                `<div class="change-item"><span class="arrow">${flow}</span><span style="color:#2c3e50;font-weight:bold;">${count}件</span></div>`
+            ).join('');
+    }
+
+    function destroyChart(chart) { if (chart) chart.destroy(); return null; }
+
+    function renderAll() {
+        const sd = planDetailData[currentStore];
+        const pd = paymentsData[currentStore];
 
         document.getElementById('period').innerHTML =
-            `<strong>データ期間：</strong> ${data.period.from} ～ ${data.period.to}`;
+            `<strong>データ期間：</strong> ${pd.period.from} ～ ${pd.period.to}`;
 
         document.getElementById('stats').innerHTML = `
-            <div class="stat-card bcs">
-                <div class="stat-value">¥${data.bcs.total_revenue.toLocaleString()}</div>
-                <div class="stat-label">BCS 累計売上</div>
+            <div class="stat-card ${currentStore === 'bcs' ? 'bcs' : 'bp'}">
+                <div class="stat-value">¥${pd.total_revenue.toLocaleString()}</div>
+                <div class="stat-label">累計売上</div>
             </div>
-            <div class="stat-card bp">
-                <div class="stat-value">¥${data.bcbp.total_revenue.toLocaleString()}</div>
-                <div class="stat-label">BCBP 累計売上</div>
+            <div class="stat-card total">
+                <div class="stat-value">${pd.total_records.toLocaleString()}</div>
+                <div class="stat-label">決済件数</div>
             </div>
-            <div class="stat-card bcs">
-                <div class="stat-value">${data.bcs.total_records.toLocaleString()}</div>
-                <div class="stat-label">BCS 決済件数</div>
-            </div>
-            <div class="stat-card bp">
-                <div class="stat-value">${data.bcbp.total_records.toLocaleString()}</div>
-                <div class="stat-label">BCBP 決済件数</div>
+            <div class="stat-card warn">
+                <div class="stat-value">${sd.changes.total.toLocaleString()}</div>
+                <div class="stat-label">プラン変更件数（累計）</div>
             </div>
         `;
 
         // Revenue chart
-        const allMonths = [...new Set([
-            ...data.bcs.monthly_revenue.labels,
-            ...data.bcbp.monthly_revenue.labels
-        ])].sort();
-
-        const bcsRevMap = {};
-        data.bcs.monthly_revenue.labels.forEach((m, i) => bcsRevMap[m] = data.bcs.monthly_revenue.values[i]);
-        const bcbpRevMap = {};
-        data.bcbp.monthly_revenue.labels.forEach((m, i) => bcbpRevMap[m] = data.bcbp.monthly_revenue.values[i]);
-
-        new Chart(document.getElementById('revenueChart'), {
+        revenueChart = destroyChart(revenueChart);
+        revenueChart = new Chart(document.getElementById('revenueChart'), {
             type: 'line',
             data: {
-                labels: allMonths,
-                datasets: [
-                    {
-                        label: 'BCS',
-                        data: allMonths.map(m => bcsRevMap[m] || 0),
-                        borderColor: '#3498db',
-                        backgroundColor: 'rgba(52,152,219,0.1)',
-                        fill: true, tension: 0.3
-                    },
-                    {
-                        label: 'BCBP',
-                        data: allMonths.map(m => bcbpRevMap[m] || 0),
-                        borderColor: '#e74c3c',
-                        backgroundColor: 'rgba(231,76,60,0.1)',
-                        fill: true, tension: 0.3
-                    }
-                ]
+                labels: pd.monthly_revenue.labels,
+                datasets: [{
+                    label: '月別売上',
+                    data: pd.monthly_revenue.values,
+                    borderColor: currentStore === 'bcs' ? '#3498db' : '#e74c3c',
+                    backgroundColor: currentStore === 'bcs' ? 'rgba(52,152,219,0.1)' : 'rgba(231,76,60,0.1)',
+                    fill: true, tension: 0.3
+                }]
             },
             options: {
                 responsive: true,
-                scales: {
-                    x: { ticks: { maxTicksLimit: 20 } },
-                    y: {
-                        beginAtZero: true,
-                        ticks: { callback: v => '¥' + (v / 10000).toFixed(0) + '万' }
-                    }
-                }
+                scales: { x: { ticks: { maxTicksLimit: 20 } }, y: { beginAtZero: true, ticks: { callback: v => '¥' + (v/10000).toFixed(0) + '万' } } }
             }
         });
 
-        // Count chart
-        const bcsCountMap = {};
-        data.bcs.monthly_revenue.labels.forEach((m, i) => bcsCountMap[m] = data.bcs.monthly_revenue.counts[i]);
-        const bcbpCountMap = {};
-        data.bcbp.monthly_revenue.labels.forEach((m, i) => bcbpCountMap[m] = data.bcbp.monthly_revenue.counts[i]);
+        // Plan trend (stacked area)
+        const trendData = sd.plan_trend;
+        const datasets = Object.entries(trendData.plans)
+            .filter(([_, vals]) => vals.some(v => v > 0))
+            .sort((a, b) => b[1].reduce((s, v) => s + v, 0) - a[1].reduce((s, v) => s + v, 0))
+            .slice(0, 12)
+            .map(([plan, vals], i) => ({
+                label: plan, data: vals,
+                backgroundColor: getPlanColor(plan, i),
+                borderColor: getPlanColor(plan, i),
+                fill: true, tension: 0.3
+            }));
 
-        new Chart(document.getElementById('countChart'), {
+        planTrendChart = destroyChart(planTrendChart);
+        planTrendChart = new Chart(document.getElementById('planTrendChart'), {
+            type: 'line',
+            data: { labels: trendData.labels, datasets },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'right', labels: { font: { size: 10 } } } },
+                scales: { x: { ticks: { maxTicksLimit: 12 } }, y: { stacked: true, beginAtZero: true } }
+            }
+        });
+
+        // Month selector
+        const select = document.getElementById('monthSelect');
+        const prevVal = select.value;
+        select.innerHTML = sd.months.slice().reverse().map(m => `<option value="${m}">${m}</option>`).join('');
+        if (prevVal && sd.months.includes(prevVal)) select.value = prevVal;
+        renderMonthDetail();
+
+        // Top flows
+        renderBars('topFlows', sd.changes.top_flows, false);
+
+        // Change count chart
+        const changeMonths = sd.months;
+        const changeCounts = changeMonths.map(ym => {
+            const mc = sd.changes.monthly[ym];
+            return mc ? Object.values(mc).reduce((s, v) => s + v, 0) : 0;
+        });
+
+        changeChart = destroyChart(changeChart);
+        changeChart = new Chart(document.getElementById('changeChart'), {
             type: 'bar',
             data: {
-                labels: allMonths,
-                datasets: [
-                    { label: 'BCS', data: allMonths.map(m => bcsCountMap[m] || 0), backgroundColor: 'rgba(52,152,219,0.7)' },
-                    { label: 'BCBP', data: allMonths.map(m => bcbpCountMap[m] || 0), backgroundColor: 'rgba(231,76,60,0.7)' }
-                ]
+                labels: changeMonths,
+                datasets: [{ label: 'プラン変更件数', data: changeCounts, backgroundColor: 'rgba(155,89,182,0.6)' }]
             },
             options: {
                 responsive: true,
-                scales: {
-                    x: { ticks: { maxTicksLimit: 20 } },
-                    y: { beginAtZero: true }
-                }
+                scales: { x: { ticks: { maxTicksLimit: 20 } }, y: { beginAtZero: true } }
             }
         });
-
-        // Type charts
-        createPieChart('typeBcsChart', data.bcs.charge_types);
-        createPieChart('typeBcbpChart', data.bcbp.charge_types);
-
-        // Plan revenue charts
-        createHBarChart('planRevBcsChart', data.bcs.plan_revenue, 'rgba(52,152,219,0.7)');
-        createHBarChart('planRevBcbpChart', data.bcbp.plan_revenue, 'rgba(231,76,60,0.7)');
     }
-    init();
+
+    renderAll();
     </script>
 </body>
 </html>
